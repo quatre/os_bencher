@@ -101,7 +101,7 @@ def parse_sysbench_result(path): # noqa
 
     # Post
 
-    if out['test'] in ("random-write-test",):
+    if out['test'] in ("random-write-test", "random-read-test"):
         parsed_ops = re.match(r'(\d+) Read, (\d+) Write, (\d+) Other',
                               out['operations-performed'])
         out['operations-performed'] = {
