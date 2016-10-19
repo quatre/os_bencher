@@ -94,6 +94,7 @@ def parse_sysbench_result(path): # noqa
                 else:
                     current_pos[key] = value
         except:
+            pass
 
         last_level = level
         last_key = key
