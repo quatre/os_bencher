@@ -1,0 +1,85 @@
+description: Test_WaitCondition
+heat_template_version: 2014-10-16
+parameters:
+  image_name:
+    description: Image to use to boot server servers
+    type: string
+    constraints:
+      - custom_constraint: glance.image
+    default: "Ubuntu 14.04"
+  instance_type:
+    description: Flavor to use to boot server servers
+    type: string
+    constraints:
+      - custom_constraint: nova.flavor
+  keypair:
+    description: Keypair to use to boot server servers
+    type: string
+    constraints:
+      - custom_constraint: nova.keypair
+resources:
+  network_0:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: true
+      shared: false
+  network_subnet_0:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: network_0 }
+      cidr: 192.168.22.0/24
+      dns_nameservers: ["8.8.8.8"]
+      enable_dhcp: true
+      host_routes: []
+      ip_version: 4
+  router_0:
+    properties:
+      admin_state_up: true
+      external_gateway_info:
+        network: public
+    type: OS::Neutron::Router
+  router_0_interface_0:
+    properties:
+      router_id:
+        get_resource: router_0
+      subnet_id:
+        get_resource: network_subnet_0
+    type: OS::Neutron::RouterInterface
+  server_0:
+    depends_on: network_subnet_0
+    properties:
+      key_name: {get_param: keypair}
+      diskConfig: AUTO
+      flavor: {get_param: instance_type}
+      image: {get_param: image_name}
+      networks:
+        - network: {get_resource: network_0}
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            wc_notify: { get_attr: ['wait_handle1', 'curl_cli'] }
+            debug_str: { get_attr: ['wait_handle1', 'curl_cli'] }
+          template: |
+            #! /bin/sh
+            echo 'debug_str'
+            git clone https://github.com/quatre/os_bencher.git
+            cd os_bencher
+            bash sysbench.sh
+            DATA=$(cat sb_result.json)
+            wc_notify -k --data-binary "{\"status\": \"SUCCESS\", \"data\": $DATA}"
+    type: OS::Nova::Server
+  wait_condition1:
+    type: OS::Heat::WaitCondition
+    properties:
+      handle: {get_resource: wait_handle1}
+      count: 1
+      timeout: 900
+  wait_handle1:
+    type: OS::Heat::WaitConditionHandle
+outputs:
+  curl_cli:
+    value: { get_attr: ['wait_handle1', 'curl_cli'] }
+  wc_data:
+    value: { get_attr: ['wait_condition1', 'data'] }
+
