@@ -109,6 +109,15 @@ def parse_sysbench_result(path): # noqa
             'write': int(parsed_ops.group(2)),
             'other': int(parsed_ops.group(3)),
         }
+
+    if out['test'] in ("oltp-test"):
+        parsed_ops = re.match(r'(\d+) Read, (\d+) Write, (\d+) Other',
+                              out['operations-performed'])
+        out['operations-performed'] = {
+            'read': int(parsed_ops.group(1)),
+            'write': int(parsed_ops.group(2)),
+            'other': int(parsed_ops.group(3)),
+        }
     return out
 
 

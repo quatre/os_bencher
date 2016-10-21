@@ -10,8 +10,10 @@ parameters:
   instance_type:
     description: Flavor to use to boot server servers
     type: string
-    constraints:
-      - custom_constraint: nova.flavor
+  instance_count:
+    description: Number of instances to boot
+    type: number
+    default: 1
   keypair:
     description: Keypair to use to boot server servers
     type: string
@@ -45,35 +47,40 @@ resources:
       subnet_id:
         get_resource: network_subnet_0
     type: OS::Neutron::RouterInterface
-  server_0:
+  server_group:
+    type: OS::Heat::ResourceGroup
     depends_on: network_subnet_0
     properties:
-      key_name: {get_param: keypair}
-      diskConfig: AUTO
-      flavor: {get_param: instance_type}
-      image: {get_param: image_name}
-      networks:
-        - network: {get_resource: network_0}
-      user_data_format: RAW
-      user_data:
-        str_replace:
-          params:
-            wc_notify: { get_attr: ['wait_handle1', 'curl_cli'] }
-            debug_str: { get_attr: ['wait_handle1', 'curl_cli'] }
-          template: |
-            #! /bin/sh
-            echo 'debug_str'
-            git clone https://github.com/quatre/os_bencher.git
-            cd os_bencher
-            bash sysbench.sh
-            DATA=$(cat sb_result.json)
-            wc_notify -k --data-binary "{\"status\": \"SUCCESS\", \"data\": $DATA}"
-    type: OS::Nova::Server
+      count: {get_param: instance_count}
+      resource_def:
+        properties:
+          key_name: {get_param: keypair}
+          diskConfig: AUTO
+          flavor: {get_param: instance_type}
+          image: {get_param: image_name}
+          networks:
+            - network: {get_resource: network_0}
+          user_data_format: RAW
+          user_data:
+            str_replace:
+              params:
+                wc_notify: { get_attr: ['wait_handle1', 'curl_cli'] }
+                debug_str: { get_attr: ['wait_handle1', 'curl_cli'] }
+                flavor_str: { get_param: instance_type }
+              template: |
+                #! /bin/sh
+                echo 'debug_str'
+                git clone https://github.com/quatre/os_bencher.git
+                cd os_bencher
+                bash sysbench.sh flavor_str
+                DATA=$(cat sb_result.json)
+                wc_notify -k --data-binary "{\"status\": \"SUCCESS\", \"data\": $DATA }"
+        type: OS::Nova::Server
   wait_condition1:
     type: OS::Heat::WaitCondition
     properties:
       handle: {get_resource: wait_handle1}
-      count: 1
+      count: {get_param: instance_count}
       timeout: 900
   wait_handle1:
     type: OS::Heat::WaitConditionHandle
