@@ -1,10 +1,11 @@
 #! /bin/bash
 export DEBIAN_FRONTEND=noninteractive 
 apt-get update; apt-get install sysbench mysql-server -y -q
-mysql -u root -e 'create database test;';
 
 
 FLAVOR=$1
+MYSQL_USER="${2:-root}"
+MYSQL_DB="${3:-test}"
 
 RESULT_DIR=$(mktemp -d)
 CPU_COUNT=$(cat /proc/cpuinfo  | grep "^processor" | wc -l)
@@ -14,9 +15,17 @@ TEST_TIMEOUT=240
 OLTP_ROWS_NUM=1000000
 FILE_SIZE=40G
 
+MAX_PRIMES=2000
+TEST_TIMEOUT=3
+OLTP_ROWS_NUM=1000
+FILE_SIZE=40M
 
 
-sysbench --test=oltp --oltp-table-size=$OLTP_ROWS_NUM --mysql-db=test --mysql-user=root prepare
+CPU_TESTS=$(echo "1;$CPU_COUNT/2;$CPU_COUNT" | bc | sort | uniq)
+BS_TESTS="4K 8K"
+
+mysql -u $MYSQL_USER -e "create database $MYSQL_DB;";
+sysbench --test=oltp --oltp-table-size=$OLTP_ROWS_NUM --mysql-db=$MYSQL_DB --mysql-user=$MYSQL_USER prepare
 
 
 function cpu_prime {
@@ -107,11 +116,11 @@ dest=$HOME/sb_files
     pushd $dest
     sysbench --test=fileio --file-total-size=$FILE_SIZE prepare
 
-    for tc in 1 2
+    for tc in $CPU_TESTS 
     do
     	cpu_prime $tc
     	oltp $tc
-    	for bs in 1K 4K 8K 64K
+    	for bs in $BS_TESTS
     	do
     		io_rndrd $tc $bs root
     		io_rndwr $tc $bs root 
@@ -130,9 +139,9 @@ then
         pushd $dest
         sysbench --test=fileio --file-total-size=$FILE_SIZE prepare
     
-        for tc in 1 2
+        for tc in $CPU_TESTS
         do
-        	for bs in 1K 4K 8K 64K
+        	for bs in $BS_TESTS
         	do
         		io_rndrd $tc $bs ephemeral
         		io_rndwr $tc $bs ephemeral 
