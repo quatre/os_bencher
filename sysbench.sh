@@ -21,7 +21,7 @@ OLTP_ROWS_NUM=1000
 FILE_SIZE=40M
 
 
-CPU_TESTS=$(echo "1;$CPU_COUNT/2;$CPU_COUNT" | bc | sort | uniq)
+CPU_TESTS=$(echo "1;$CPU_COUNT/2;$CPU_COUNT" | bc  | grep -v  '^0$' | sort | uniq)
 BS_TESTS="4K 8K"
 
 mysql -u $MYSQL_USER -e "create database $MYSQL_DB;";
