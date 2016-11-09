@@ -109,7 +109,8 @@ function io_seqrd {
 dest=$HOME/sb_files
     mkdir -p $dest
     pushd $dest
-    if [[ -z "$NO_DISK_TEST" ]] then
+    if [[ -z "$NO_DISK_TEST" ]]
+    then
         sysbench --test=fileio --file-total-size=$FILE_SIZE prepare
     fi
 
@@ -117,7 +118,8 @@ dest=$HOME/sb_files
     do
         cpu_prime $tc
         oltp $tc
-        if [[ -z "$NO_DISK_TEST" ]] then
+        if [[ -z "$NO_DISK_TEST" ]]
+	then
             for bs in $BS_TESTS
             do
                 io_rndrd $tc $bs root
@@ -131,7 +133,8 @@ dest=$HOME/sb_files
     popd
     rm -rf $dest
 
-if [[ -z "$NO_DISK_TEST" ]] then
+if [[ -z "$NO_DISK_TEST" ]]
+then
     if (mount | grep "/dev/vdb on /mnt")
     then
         dest=/mnt/sb_files
