@@ -13,7 +13,7 @@ CPU_COUNT=$(cat /proc/cpuinfo  | grep "^processor" | wc -l)
 MAX_PRIMES=200000
 TEST_TIMEOUT=240
 OLTP_ROWS_NUM=1000000
-FILE_SIZE=40G
+FILE_SIZE=10G
 
 
 CPU_TESTS=$(echo "1;$CPU_COUNT/2;$CPU_COUNT" | bc  | grep -v  '^0$' | sort | uniq)
