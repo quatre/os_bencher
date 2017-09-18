@@ -10,14 +10,23 @@ MYSQL_DB="${3:-test}"
 RESULT_DIR=$(mktemp -d)
 CPU_COUNT=$(cat /proc/cpuinfo  | grep "^processor" | wc -l)
 
-MAX_PRIMES=200000
-TEST_TIMEOUT=240
-OLTP_ROWS_NUM=1000000
-FILE_SIZE=10G
-
-
 CPU_TESTS=$(echo "1;$CPU_COUNT/2;$CPU_COUNT" | bc  | grep -v  '^0$' | sort | uniq)
 BS_TESTS="4K 8K"
+
+if [[ -z "$SHORT_TEST" ]]
+then
+    MAX_PRIMES=200000
+    TEST_TIMEOUT=240
+    OLTP_ROWS_NUM=1000000
+    FILE_SIZE=10G
+else
+    MAX_PRIMES=20000
+    TEST_TIMEOUT=24
+    OLTP_ROWS_NUM=1000
+    FILE_SIZE=1G
+    BS_TESTS="4K"
+    CPU_TESTS="1"
+fi
 
 mysql -u $MYSQL_USER -e "create database $MYSQL_DB;";
 sysbench --test=oltp --oltp-table-size=$OLTP_ROWS_NUM --mysql-db=$MYSQL_DB --mysql-user=$MYSQL_USER prepare
